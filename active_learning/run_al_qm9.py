@@ -3,6 +3,7 @@ from torch_geometric.datasets import QM9
 from torch_geometric.transforms import NormalizeFeatures
 from torch_geometric.loader import DataLoader
 from torch_geometric.nn import GATConv, global_mean_pool
+from torch_geometric.nn.models import GIN
 import torch.nn.functional as F
 from torch import nn
 import matplotlib.pyplot as plt
@@ -14,7 +15,7 @@ from random_strategy import RandomSampling
 dataset = QM9(root= '../QM9')
 dataset.transform = NormalizeFeatures()
 
-dataset.data.y = dataset.data.y[:, :3]
+#dataset.data.y = dataset.data.y[:, :5]
 
 train_dataset = dataset[:100000]
 test_dataset = dataset[100000:120000]
@@ -22,17 +23,19 @@ test_dataset = dataset[100000:120000]
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
-data = Data(train_loader, test_loader)
+#data = Data(train_loader, test_loader)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model = GAT(in_channels=dataset.num_node_features, hidden_channels=32, out_channels=3).to(device)
+#model = GAT(in_channels=dataset.num_node_features, hidden_channels=32, out_channels=5).to(device)
+model = GIN(in_channels=dataset.num_node_features, hidden_channels=32, num_layers=5, out_channels=19).to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.005)
 criterion = nn.MSELoss(reduction='mean')
 
 print("Model: ", model)
-
-NUM_ROUNDS = 15
-NUM_EPOCHS = 50
+print("Device: ", device)
+print("Optimizer: ", optimizer)
+NUM_ROUNDS = 0
+NUM_EPOCHS = 5
 DATASET = 'qm9'
 TASKS = [
     "mu", "alpha", "homo", "lumo", "gap", "r2", "zpve", "cv", "u0", "u298",
@@ -49,7 +52,7 @@ print("Strategy: ", strategy)
 
 print("Size of initial training dataset: ", len(train_loader))
 
-data.initialize_labels(num=1000)
+data.initialize_labels(num=int(len(train_loader)/5))
 
 print("Initial label IDs created")
 
@@ -67,14 +70,18 @@ for r in range(1, NUM_ROUNDS + 1):
     print("Round: ", r)
 
     # Query the points we want labels for
-    query_idxs = strategy.query(500)
+    query_idxs = strategy.query(int(len(train_loader)/10))
 
     # update labels
     strategy.update(query_idxs)
     # reset the net
     print("Resetting the net and optimizer")
-    strategy.model = GAT(in_channels=dataset.num_node_features, hidden_channels=32, out_channels=3).to(device)
-    strategy.optimizer = torch.optim.Adam(model.parameters(), lr=0.005)
+    #strategy.model = GAT(in_channels=dataset.num_node_features, hidden_channels=32, out_channels=5).to(device)
+    strategy.model.reset_parameters() #GIN(in_channels=dataset.num_node_features, hidden_channels=32, num_layers=5, out_channels=19).to(device)
+    strategy.optimizer = torch.optim.Adam(strategy.model.parameters(), lr=0.005)
+    print("Model and optimizer: ")
+    print(strategy.model)
+    print(strategy.optimizer)
     strategy.train(NUM_EPOCHS)
 
     # calculate accuracy

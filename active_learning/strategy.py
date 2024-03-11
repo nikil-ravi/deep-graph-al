@@ -27,10 +27,12 @@ class Strategy:
                     continue
                 data = data.to(self.device)
                 self.optimizer.zero_grad()
-                output = self.model(data)
+                output = self.model(data.x, data.edge_index, data.batch)
                 # print(output[0])
                 # print(data.y[0])
                 # print("\n\n\n")
+                print("Output shape: ")
+                print(output.shape)
                 loss = self.criterion(output, data.y)
                 loss.backward()
                 self.optimizer.step()
@@ -44,7 +46,7 @@ class Strategy:
         print("Evaluating model on " + str(len(test_data)) + " batches...")
         for data in test_data:
             data = data.to(self.device)
-            output = self.model(data)
+            output = self.model(data.x, data.edge_index, data.batch)
             loss = self.criterion(output, data.y)
             total_loss += loss.item()
 
