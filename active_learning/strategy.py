@@ -1,3 +1,9 @@
+import torch
+import torch.nn.functional as F
+from torch_geometric.nn import GINConv, global_mean_pool, MLP
+from torch.nn import Linear
+
+
 class Strategy:
     def __init__(self, dataset, model, criterion, optimizer, device):
         self.dataset = dataset # this is a `Dataset` object
@@ -27,16 +33,18 @@ class Strategy:
                     continue
                 data = data.to(self.device)
                 self.optimizer.zero_grad()
-                output = self.model(data.x, data.edge_index, data.batch)
+                output = self.model(data)#.x, data.edge_index, data.batch)
                 # print(output[0])
                 # print(data.y[0])
                 # print("\n\n\n")
-                print("Output shape: ")
-                print(output.shape)
+                #print("Output shape: ")
+                #print(output.shape)
+                #output = global_mean_pool(output, data.batch)
                 loss = self.criterion(output, data.y)
                 loss.backward()
                 self.optimizer.step()
                 total_loss += loss.item()
+            #print(len(labeled_idxs))
             epoch_loss = total_loss / len(labeled_idxs)
             print(f'Epoch: {epoch}, Loss: {epoch_loss:.4f}')
 
@@ -46,7 +54,8 @@ class Strategy:
         print("Evaluating model on " + str(len(test_data)) + " batches...")
         for data in test_data:
             data = data.to(self.device)
-            output = self.model(data.x, data.edge_index, data.batch)
+            output = self.model(data)#.x, data.edge_index, data.batch)
+            #output = global_mean_pool(output, data.batch)
             loss = self.criterion(output, data.y)
             total_loss += loss.item()
 

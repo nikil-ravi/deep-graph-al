@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 from torch import nn
-from torch_geometric.nn import GATConv, global_mean_pool
+from torch_geometric.nn import GIN, GATConv, global_mean_pool
 
 class GAT(torch.nn.Module):
     def __init__(self, in_channels, hidden_channels, out_channels, num_heads=4):
@@ -20,4 +20,18 @@ class GAT(torch.nn.Module):
         # Global mean pooling
         x = global_mean_pool(x, batch)
         
+        return x
+
+class GINRegression(torch.nn.Module):
+    def __init__(self, num_features, out_channels):
+        super(GINRegression, self).__init__()
+        self.gin = GIN(in_channels=num_features, hidden_channels=64, num_layers=5, out_channels=out_channels)
+        #self.linear = torch.nn.Linear(19, out_channels)
+
+    def forward(self, data):
+        x = self.gin(data.x, data.edge_index)
+
+        x = global_mean_pool(x, data.batch)
+
+        #x = self.linear(x)
         return x
