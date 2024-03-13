@@ -25,7 +25,7 @@ class GAT(torch.nn.Module):
 class GINRegression(torch.nn.Module):
     def __init__(self, num_features, out_channels):
         super(GINRegression, self).__init__()
-        self.gin = GIN(in_channels=num_features, hidden_channels=64, num_layers=5, out_channels=out_channels)
+        self.gin = GIN(in_channels=num_features, hidden_channels=64, num_layers=5, out_channels=out_channels, dropout=0.6)
         #self.linear = torch.nn.Linear(19, out_channels)
 
     def forward(self, data):

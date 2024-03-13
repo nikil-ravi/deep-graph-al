@@ -26,12 +26,7 @@ class Data:
     
     def get_unlabeled_data(self):
         unlabeled_idxs = np.arange(self.n_pool)[~self.labeled_idxs]
-        return unlabeled_idxs, Subset(self.train, list(unlabeled_idxs))
-    
-    def cal_test_acc(self, preds):
-        deepchem.metrics.Metric(metrics.pearson_r2_score,
-                                            np.mean)
-        return 1.0 * (self.Y_test==preds).sum().item() / self.n_test
+        return unlabeled_idxs
 
     def transforms():
         pass

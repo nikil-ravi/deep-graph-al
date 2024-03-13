@@ -29,11 +29,14 @@ class Strategy:
             self.model.train()
             total_loss = 0
             for i, data in enumerate(self.dataset.train):
+                #print("Train data shape: ", data.x.shape)
                 if i not in labeled_idxs:
                     continue
                 data = data.to(self.device)
+                #print(data.shape)
                 self.optimizer.zero_grad()
                 output = self.model(data)#.x, data.edge_index, data.batch)
+                #print("Output shape: ", output.shape)
                 # print(output[0])
                 # print(data.y[0])
                 # print("\n\n\n")
@@ -61,13 +64,35 @@ class Strategy:
 
         return total_loss/len(test_data)
 
-    def predict_with_uncertainty(self, model, input_data, n_iterations=100):
-        model.train()  # Enable dropout
-        predictions = [self.model(input_data) for _ in range(n_iterations)]
-        predictions = torch.stack(predictions)
-        mean_predictions = predictions.mean(0)
-        uncertainty = predictions.std(0)
-        return mean_predictions, uncertainty
+    def predict_with_uncertainty(self, candidate_idxs, n_iterations=3):
+        self.model.train()  # Enable dropout
+        means = []
+        stds = []
+
+        print("Predicting with uncertainty on " + str(len(candidate_idxs)) + " batches...")
+        
+        for i, data in enumerate(self.dataset.train):
+            if i not in candidate_idxs:
+                continue
+            # print("Predicting with uncertainty on batch " + str(i) + "...")
+            data = data.to(self.device)
+            predictions = [self.model(data).detach() for _ in range(n_iterations)]
+            # print("Length of predictions: ", len(predictions))
+            # print("Shape of each prediction: ", predictions[0].shape)
+            predictions = torch.stack(predictions)
+            #print(predictions.shape)
+            mean_predictions = predictions.mean(dim=0)
+            uncertainty = predictions.std(dim=0)
+            # print(uncertainty)
+            # print("Mean predictions: ", mean_predictions.shape)
+            #print("Uncertainty: ", uncertainty.shape)
+            # print("Uncertainty value: ", uncertainty.mean(dim=0).item())
+            stds.append((i, uncertainty.mean(0).mean(0).item()))
+
+        self.model.eval()
+
+        # print("Length of stds: ", len(stds))
+        return mean_predictions, stds
 
     def predict_prob(self, data):
         probs = self.net.predict_prob(data)

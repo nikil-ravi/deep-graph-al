@@ -1,3 +1,4 @@
+import os
 import torch
 from torch_geometric.datasets import QM9
 from torch_geometric.transforms import NormalizeFeatures
@@ -12,6 +13,7 @@ from models import GAT, GINRegression
 from al_data import Data
 from random_strategy import RandomSampling
 import argparse
+from mc_dropout import MCDropout
 
 
 
@@ -58,6 +60,8 @@ def main():
     #strategy
     if args.strategy == "random":
         strategy = RandomSampling(data, model, criterion, optimizer, device)
+    elif args.strategy == "mcdropout":
+        strategy = MCDropout(data, model, criterion, optimizer, device)
         
     #initial labeled data
     data.initialize_labels(num=int(len(train_loader)/args.init_labeled))
@@ -76,6 +80,9 @@ def main():
     print("0th round accuracy:", preds)
 
     # Save the model
+    if not os.path.exists(args.save_path):
+        os.makedirs(args.save_path)
+    
     torch.save(model.state_dict(), args.save_path + "/round_0.pth")
 
     for r in range(1, args.num_rounds + 1):
@@ -83,7 +90,7 @@ def main():
         print("Round: ", r)
 
         # Query the points we want labels for
-        query_idxs = strategy.query(int(len(train_loader)/args.query_size))
+        query_idxs = strategy.query(n_query=int(len(train_loader)/args.query_size))
 
         # update available labels
         strategy.update(query_idxs)
