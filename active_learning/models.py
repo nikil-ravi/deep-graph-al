@@ -35,3 +35,7 @@ class GINRegression(torch.nn.Module):
 
         #x = self.linear(x)
         return x
+    
+    def reset_parameters(self):
+        self.gin.reset_parameters()
+        #self.linear.reset_parameters()
