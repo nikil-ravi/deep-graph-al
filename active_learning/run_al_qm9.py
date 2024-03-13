@@ -64,7 +64,7 @@ def main():
         strategy = MCDropout(data, model, criterion, optimizer, device)
         
     #initial labeled data
-    data.initialize_labels(num=int(len(train_loader)/args.init_labeled))
+    data.initialize_labels(num=int(len(train_loader)*args.init_labeled/100))
 
     print("My data object: ", data)
     print("Model: ", model)
@@ -90,7 +90,7 @@ def main():
         print("Round: ", r)
 
         # Query the points we want labels for
-        query_idxs = strategy.query(n_query=int(len(train_loader)/args.query_size))
+        query_idxs = strategy.query(n_query=int(len(train_loader)*args.query_size/100))
 
         # update available labels
         strategy.update(query_idxs)
