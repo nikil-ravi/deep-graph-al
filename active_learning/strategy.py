@@ -51,7 +51,7 @@ class Strategy:
             epoch_loss = total_loss / len(labeled_idxs)
             print(f'Epoch: {epoch}, Loss: {epoch_loss:.4f}')
 
-    def predict(self, test_data):
+    def eval(self, test_data):
         total_loss = 0
         self.model.eval()
         print("Evaluating model on " + str(len(test_data)) + " batches...")

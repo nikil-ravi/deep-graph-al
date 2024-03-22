@@ -14,7 +14,7 @@ from al_data import Data
 from random_strategy import RandomSampling
 import argparse
 from mc_dropout import MCDropout
-
+from utils import performance_satisfactory
 
 
 TASKS = [
@@ -35,6 +35,7 @@ def main():
     parser.add_argument('--model', type=str, help="Model", required=False, default="GIN")
     parser.add_argument('--query_size', type=int, help="Percent of data points to query", required=False, default=10)
     parser.add_argument('--save_path', type=str, help="Folder to save the models and logs", required=False, default="./results") #TODO: use date, time here
+    parser.add_argument('--loss_threshold', type=float, help="Threshold for performance", required=False, default=0)
 
     args = parser.parse_args()
 
@@ -76,17 +77,20 @@ def main():
 
     # First round
     strategy.train(args.num_epochs)
-    preds = strategy.predict(data.test)
-    print("0th round accuracy:", preds)
+    # preds = strategy.predict(data.test)
+    # print("0th round accuracy:", preds)
+    test_loss = strategy.eval(data.test)
+    print("0th round accuracy:", test_loss)
 
     # Save the model
     if not os.path.exists(args.save_path):
         os.makedirs(args.save_path)
     
     torch.save(model.state_dict(), args.save_path + "/round_0.pth")
-
-    for r in range(1, args.num_rounds + 1):
-
+    
+    # for r in range(1, args.num_rounds + 1):
+    r = 1
+    while r <= args.num_rounds and not performance_satisfactory(test_loss, args.loss_threshold):
         print("Round: ", r)
 
         # Query the points we want labels for
@@ -103,13 +107,15 @@ def main():
         strategy.train(args.num_epochs)
 
         # calculate accuracy
-        preds = strategy.predict(data.test)
+        test_acc = strategy.eval(data.test)
 
         #print(f"Round {rd} testing accuracy: {dataset.cal_test_acc(preds)}")
-        print(f"Round {r} testing accuracy: {preds}")
+        print(f"Round {r} testing accuracy: {test_acc}")
 
         # Save the model
-        torch.save(model.state_dict(), args.save_path + "/round_1.pth")
+        torch.save(model.state_dict(), args.save_path + "/round_"+str(r)+".pth")
+
+        r += 1
 
 if __name__ == "__main__":
     main()
